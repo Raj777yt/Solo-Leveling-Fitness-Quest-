@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Solo Leveling Fitness Quest</title>
+
+  <!-- ======= Styles (Solo Leveling dark theme) ======= -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Rajdhani',sans-serif}
+    body{background:radial-gradient(circle at center,#01040a 0%,#000 100%);color:#aaf6ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding-bottom:60px}
+    header{margin:28px 0;text-align:center}
+    h1{font-size:2.4rem;color:#9ffcff;text-shadow:0 0 20px #00e6ff;letter-spacing:2px}
+    .top-row{width:90%;max-width:1100px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+    .stats{text-align:left}
+    #points{font-size:1.9rem;color:#aaf6ff;text-shadow:0 0 25px #00eaff;margin-bottom:6px}
+    .timer{color:#9fefff;font-size:0.95rem;opacity:0.9}
+    .auth{text-align:right}
+    #playerName{color:#9fefff;margin-bottom:8px}
+    .container{width:90%;max-width:1100px}
+    .quest-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;margin:8px auto}
+    .card{background:rgba(0,25,45,0.65);border:1px solid rgba(0,247,255,0.6);border-radius:16px;padding:18px;text-align:center;box-shadow:0 0 28px rgba(0,217,255,0.18);position:relative;transition:transform .25s,box-shadow .25s}
+    .card:hover{transform:translateY(-6px);box-shadow:0 0 40px #00c3ff}
+    .card h2{font-size:1.3rem;color:#b7ffff;margin-bottom:8px}
+    .card p{color:#a8f7ff;font-size:0.95rem;margin-bottom:8px}
+    .progress-bar{width:100%;height:12px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;margin:10px 0}
+    .progress{height:100%;width:0%;background:linear-gradient(90deg,#00cfff,#00ffff,#0099ff);box-shadow:0 0 12px #00eaff;transition:0.6s;border-radius:8px}
+    .btn{margin-top:12px;background:rgba(0,230,255,0.08);border:1px solid #00e5ff;color:#9ffcff;padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:600}
+    .btn:hover{background:#00ffff;color:#000;box-shadow:0 0 20px #00eaff}
+    .login-btn{border:2px solid #00eaff;color:#9ffcff;background:transparent;padding:10px 16px;border-radius:10px;cursor:pointer}
+    .auth-row{display:flex;flex-direction:column;align-items:flex-end}
+    .hidden{display:none}
+    .center-note{margin-top:18px;color:#9fefff;opacity:0.9;text-align:center}
+    .leaderboard{width:90%;max-width:700px;background:rgba(0,15,25,0.7);border:1px solid #00c3ff;border-radius:12px;padding:14px;margin:26px auto;text-align:center;box-shadow:0 0 20px #00c3ff}
+    @media (max-width:600px){.top-row{flex-direction:column;align-items:flex-start;gap:8px}.auth{text-align:left}}
+  </style>
+
+  <!-- ======= Firebase compat SDKs (needed) ======= -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Solo Leveling Quest System</h1>
+  </header>
+
+  <div class="top-row container">
+    <div class="stats">
+      <div>Total Points:</div>
+      <div id="points">0</div>
+      <div id="resetTimer" class="timer">Next reset in —</div>
+    </div>
+
+    <div class="auth auth-row">
+      <div id="playerName">Guest</div>
+      <div>
+        <button id="googleBtn" class="login-btn">Sign in with Google</button>
+        <button id="logoutBtn" class="login-btn hidden">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <div class="quest-container" id="questContainer">
+      <!-- Quest cards -->
+      <div class="card" data-quest="pushups" data-reward="50">
+        <h2>💪 50 Push-Ups</h2>
+        <p>Strength Training for Hunters</p>
+        <div class="progress-bar"><div class="progress" id="pushups"></div></div>
+        <button class="btn complete-btn">Complete Quest</button>
+      </div>
+
+      <div class="card" data-quest="situps" data-reward="100">
+        <h2>🦵 100 Sit-Ups</h2>
+        <p>Core Enhancement</p>
+        <div class="progress-bar"><div class="progress" id="situps"></div></div>
+        <button class="btn complete-btn">Complete Quest</button>
+      </div>
+
+      <div class="card" data-quest="run" data-reward="200">
+        <h2>🏃 10 km Run</h2>
+        <p>Endurance Challenge</p>
+        <div class="progress-bar"><div class="progress" id="run"></div></div>
+        <button class="btn complete-btn">Complete Quest</button>
+      </div>
+
+      <div class="card" data-quest="squats" data-reward="100">
+        <h2>🦿 100 Squats</h2>
+        <p>Legs of a Shadow Monarch</p>
+        <div class="progress-bar"><div class="progress" id="squats"></div></div>
+        <button class="btn complete-btn">Complete Quest</button>
+      </div>
+    </div>
+
+    <div class="center-note">Login karo aur daily quests complete karo — points cloud me save honge.</div>
+
+    <div class="leaderboard hidden" id="leaderboardBox">
+      <h3>Worldwide Leaderboard</h3>
+      <table id="leaderTable" style="width:100%;color:#b8ffff;border-collapse:collapse">
+        <tr><th style="text-align:left;padding:8px">Rank</th><th style="text-align:left;padding:8px">Player</th><th style="text-align:right;padding:8px">Points</th></tr>
+      </table>
+    </div>
+  </main>
+
+  <!-- ======= App Script (Firebase config + logic) ======= -->
+  <script>
+    /*******************************
+     * Firebase config (provided)
+     *******************************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyBLfN9o3K3XOkkSI5zLaHZfRyGbN9GF_5o",
+      authDomain: "solo-leveling-quest-bb313.firebaseapp.com",
+      projectId: "solo-leveling-quest-bb313",
+      storageBucket: "solo-leveling-quest-bb313.firebasestorage.app",
+      messagingSenderId: "672116410209",
+      appId: "1:672116410209:web:b2e93077532d8669d3e720",
+      measurementId: "G-CWDEG3T8E7"
+    };
+
+    // Initialize Firebase (compat)
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // DOM refs
+    const googleBtn = document.getElementById('googleBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const playerNameEl = document.getElementById('playerName');
+    const pointsEl = document.getElementById('points');
+    const resetTimerEl = document.getElementById('resetTimer');
+    const questCards = document.querySelectorAll('.card');
+    const leaderTable = document.getElementById('leaderTable');
+    const leaderboardBox = document.getElementById('leaderboardBox');
+
+    // State
+    let currentUser = null;
+    let totalPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
+
+    // --- Auth handlers ---
+    googleBtn.addEventListener('click', () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => alert('Login failed: ' + err.message));
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      auth.signOut().catch(err => console.error(err));
+    });
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        currentUser = user;
+        googleBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+        playerNameEl.innerText = user.displayName || 'Player';
+
+        // Ensure user doc exists and check daily reset
+        const userRef = db.collection('users').doc(user.uid);
+        const doc = await userRef.get().catch(()=>null);
+        const today = new Date().toISOString().split('T')[0];
+
+        if (!doc || !doc.exists) {
+          // create initial doc
+          await userRef.set({
+            username: user.displayName || 'Player',
+            points: totalPoints,
+            lastReset: today,
+            completed: {}
+          });
+        } else {
+          const data = doc.data();
+          // If server has different points prefer server value
+          if (typeof data.points === 'number') {
+            totalPoints = data.points;
+            localStorage.setItem('totalPoints', totalPoints);
+          }
+          // daily reset check
+          if (data.lastReset !== today) {
+            await userRef.update({ completed: {}, lastReset: today });
+          }
+        }
+        // update UI and mark completed quests
+        updateUserData();
+      } else {
+        currentUser = null;
+        googleBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        playerNameEl.innerText = 'Guest';
+        totalPoints = parseInt(localStorage.getItem('totalPoints')) || 0;
+        pointsEl.innerText = totalPoints;
+        // clear UI completed marks for guests (they will be stored locally)
+        restoreLocalCompleted();
+      }
+    });
+
+    // --- Update UI from Firestore/local ---
+    async function updateUserData() {
+      pointsEl.innerText = totalPoints;
+      if (!currentUser) return;
+
+      const userRef = db.collection('users').doc(currentUser.uid);
+      const doc = await userRef.get().catch(()=>null);
+      if (!doc || !doc.exists) return;
+
+      const data = doc.data() || {};
+      pointsEl.innerText = data.points || 0;
+
+      // mark completed quests
+      const completed = data.completed || {};
+      questCards.forEach(card => {
+        const q = card.getAttribute('data-quest');
+        const prog = card.querySelector('.progress');
+        const btn = card.querySelector('.complete-btn');
+        if (completed[q]) {
+          prog.style.width = '100%';
+          btn.disabled = true;
+          btn.textContent = 'Completed ✅';
+        } else {
+          prog.style.width = '0%';
+          btn.disabled = false;
+          btn.textContent = 'Complete Quest';
+        }
+      });
+    }
+
+    // --- Local restore for guests ---
+    function restoreLocalCompleted(){
+      const done = JSON.parse(localStorage.getItem('completedQuests') || '{}');
+      questCards.forEach(card => {
+        const q = card.getAttribute('data-quest');
+        const prog = card.querySelector('.progress');
+        const btn = card.querySelector('.complete-btn');
+        if (done[q]) {
+          prog.style.width = '100%';
+          btn.disabled = true;
+          btn.textContent = 'Completed ✅';
+        } else {
+          prog.style.width = '0%';
+          btn.disabled = false;
+          btn.textContent = 'Complete Quest';
+        }
+      });
+    }
+
+    // --- Quest complete handler ---
+    questCards.forEach(card => {
+      const btn = card.querySelector('.complete-btn');
+      btn.addEventListener('click', async () => {
+        const questId = card.getAttribute('data-quest');
+        const reward = parseInt(card.getAttribute('data-reward')) || 0;
+
+        // Prevent double clicking locally
+        const prog = card.querySelector('.progress');
+        if (prog.style.width === '100%') return alert('Quest already completed today!');
+
+        if (!currentUser) {
+          // Guest flow: save locally only
+          const proceed = confirm('You are not signed in. Points will be local only. Sign in to save to cloud?');
+          if (proceed) {
+            return googleBtn.click();
+          } else {
+            // give local points
+            applyLocalCompletion(questId, reward, card);
+            return;
+          }
+        }
+
+        // User logged in: update Firestore
+        try {
+          const userRef = db.collection('users').doc(currentUser.uid);
+          const snap = await userRef.get();
+          const data = snap.data() || { points:0, completed:{} };
+
+          if (data.completed && data.completed[questId]) {
+            alert('Quest already completed today!');
+            return;
+          }
+
+          const newPoints = (data.points || 0) + reward;
+          const newCompleted = Object.assign({}, data.completed || {}, { [questId]: true });
+
+          await userRef.update({
+            points: newPoints,
+            completed: newCompleted,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // UI update
+          totalPoints = newPoints;
+          pointsEl.innerText = totalPoints;
+          prog.style.width = '100%';
+          btn.disabled = true;
+          btn.textContent = 'Completed ✅';
+        } catch (err) {
+          console.error('Error saving quest:', err);
+          alert('Error saving to server. Points saved locally.');
+          applyLocalCompletion(questId, reward, card);
+        }
+      });
+    });
+
+    // Apply local-only completion for guests or fallback
+    function applyLocalCompletion(questId, reward, card) {
+      const done = JSON.parse(localStorage.getItem('completedQuests') || '{}');
+      done[questId] = true;
+      localStorage.setItem('completedQuests', JSON.stringify(done));
+
+      totalPoints = (parseInt(localStorage.getItem('totalPoints')) || 0) + reward;
+      localStorage.setItem('totalPoints', totalPoints);
+      pointsEl.innerText = totalPoints;
+
+      const prog = card.querySelector('.progress');
+      const btn = card.querySelector('.complete-btn');
+      prog.style.width = '100%';
+      btn.disabled = true;
+      btn.textContent = 'Completed ✅';
+    }
+
+    // --- Daily reset (local + server-side flag) ---
+    window.addEventListener('load', () => {
+      const lastReset = localStorage.getItem('lastResetDate');
+      const today = new Date().toDateString();
+      if (lastReset !== today) {
+        // reset local completed flags
+        localStorage.setItem('completedQuests', JSON.stringify({}));
+        localStorage.setItem('lastResetDate', today);
+        // reset UI for guests
+        restoreLocalCompleted();
+      } else {
+        restoreLocalCompleted();
+      }
+      startResetCountdown();
+    });
+
+    // Start reset countdown to midnight
+    function startResetCountdown(){
+      function update(){
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
+        const diff = tomorrow - now;
+        const h = Math.floor(diff / (1000*60*60));
+        const m = Math.floor((diff % (1000*60*60)) / (1000*60));
+        const s = Math.floor((diff % (1000*60)) / 1000);
+        resetTimerEl.innerText = `Next reset in ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        if (diff <= 0) {
+          // force a local reset on next tick
+          localStorage.setItem('lastResetDate', new Date().toDateString());
+        }
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // --- (Optional) Realtime leaderboard listener (hidden until you want)
+    function listenLeaderboard(){
+      leaderboardBox.classList.remove('hidden');
+      db.collection('users').orderBy('points','desc').limit(10)
+        .onSnapshot(snap => {
+          // clear rows except header
+          leaderTable.querySelectorAll('tr:not(:first-child)').forEach(r => r.remove());
+          let rank = 1;
+          snap.forEach(doc => {
+            const d = doc.data();
+            const tr = document.createElement('tr');
+            const nameTd = document.createElement('td');
+            nameTd.style.padding = '8px';
+            nameTd.textContent = d.username || d.name || 'Player';
+            const ptsTd = document.createElement('td');
+            ptsTd.style.padding = '8px';
+            ptsTd.style.textAlign = 'right';
+            ptsTd.textContent = d.points || 0;
+            const rankTd = document.createElement('td');
+            rankTd.style.padding = '8px';
+            rankTd.textContent = rank;
+            const row = document.createElement('tr');
+            row.appendChild(rankTd);
+            row.appendChild(nameTd);
+            row.appendChild(ptsTd);
+            leaderTable.appendChild(row);
+            rank++;
+          });
+        });
+    }
+
+    // Expose listenLeaderboard to console if you want to turn it on later
+    window.listenLeaderboard = listenLeaderboard;
+
+    // small helper - show a toast (optional)
+    function showToast(msg){
+      const t = document.createElement('div');
+      t.innerText = msg;
+      t.style.position='fixed';t.style.left='50%';t.style.transform='translateX(-50%)';t.style.top='18px';
+      t.style.background='rgba(0,255,255,0.08)';t.style.border='1px solid #00eaff';t.style.color='#9ffcff';t.style.padding='8px 12px';t.style.borderRadius='8px';
+      document.body.appendChild(t);
+      setTimeout(()=>t.remove(),1800);
+    }
+  </script>
+</body>
+</html>
